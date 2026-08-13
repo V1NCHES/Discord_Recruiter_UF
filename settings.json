@@ -1,0 +1,70 @@
+{
+    "authorized_role_id": 1380804110483460136,
+    "ticket_log_channel_id": 1506305916046147738,
+    "stats": {
+        "closed_tickets_yes": 6,
+        "recruiters": {
+            "584019888889397288": {
+                "closed_tickets_yes": 6
+            }
+        },
+        "history": [
+            {
+                "timestamp": "2026-05-19T15:27:27.561641",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            },
+            {
+                "timestamp": "2026-05-19T15:28:35.229266",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            },
+            {
+                "timestamp": "2026-05-19T15:30:30.495453",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            },
+            {
+                "timestamp": "2026-05-29T09:19:24.598293",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            },
+            {
+                "timestamp": "2026-05-29T09:22:40.982406",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            },
+            {
+                "timestamp": "2026-05-29T09:27:11.118958",
+                "recruiter_id": "584019888889397288",
+                "action": "closed_tickets_yes"
+            }
+        ]
+    },
+    "acceptance_logs": {
+        "1200199296788746292": {
+            "message_id": 1506318142018682901,
+            "channel_id": 1506305916046147738,
+            "recruiter_id": "584019888889397288"
+        },
+        "serqxq": {
+            "message_id": 1506318142018682901,
+            "channel_id": 1506305916046147738,
+            "recruiter_id": "584019888889397288"
+        },
+        "584019888889397288": {
+            "message_id": 1509850587108475060,
+            "channel_id": 1506305916046147738,
+            "recruiter_id": "584019888889397288"
+        },
+        "v1nchec": {
+            "message_id": 1509850587108475060,
+            "channel_id": 1506305916046147738,
+            "recruiter_id": "584019888889397288"
+        }
+    },
+    "ban_log_channel_id": 1380817757708222475,
+    "last_processed_exit_date": "2026-05-10 16:10:03",
+    "rejected_log_channel_id": 1506306002855661599,
+    "newcomers_ping_message": "\u0414\u043e\u0431\u0440\u043e\u0433\u043e \u0432\u0440\u0435\u043c\u0435\u043d\u0438 \u0441\u0443\u0442\u043e\u043a \u0414\u043b\u044f \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0437\u0430\u044f\u0432\u043a\u0438 https://discord.com/channels/1380794556433436763/1380805374415736912/1409847537346810007 \u0415\u0441\u043b\u0438 \u0432\u043e\u0437\u043d\u0438\u043a\u043b\u0438 \u0432\u043e\u043f\u0440\u043e\u0441\u044b, \u0442\u043e \u043f\u0438\u0433\u0430\u043d\u0438\u0442\u0435 <@&1380804110483460136> \u0438 \u0437\u0430\u0439\u0434\u0438\u0442\u0435 \u0432 https://discord.com/channels/1380794556433436763/1380794556995600466 \u0434\u043b\u044f \u043e\u0431\u0441\u0443\u0436\u0434\u0435\u043d\u0438\u044f \u0432\u0430\u0448\u0438\u0445 \u0432\u043e\u043f\u0440\u043e\u0441\u043e\u0432."
+}
