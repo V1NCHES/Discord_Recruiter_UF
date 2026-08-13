@@ -515,17 +515,24 @@ class Recruiter(commands.Cog):
 
                 hist_text = ""
                 for h in history:
-                    days_text = ""
-                    try:
-                        d1 = parse_date_val(h['first_seen'])
-                        d2 = parse_date_val(h['last_seen'])
-                        if d1 and d2:
-                            days = (d2 - d1).days + 1
-                            warning = " ❌" if days < 14 else ""
-                            days_text = f" — **{days} дн.**{warning}"
-                    except Exception:
-                        pass
-                    hist_text += f"• **{h['guild']}** ({h['first_seen']} - {h['last_seen']}){days_text}\n"
+                    first_str = h.get('first_seen', '')
+                    last_str = h.get('last_seen', '')
+                    is_fallback = any(w in (first_str + ' ' + last_str).lower() for w in ['current', 'present', 'настоящее', 'текущ']) and not any(c.isdigit() for c in first_str)
+                    
+                    if is_fallback:
+                        hist_text += f"• **{h['guild']}** (Текущая гильдия)\n"
+                    else:
+                        days_text = ""
+                        try:
+                            d1 = parse_date_val(first_str)
+                            d2 = parse_date_val(last_str)
+                            if d1 and d2:
+                                days = (d2 - d1).days + 1
+                                warning = " ❌" if days < 14 else ""
+                                days_text = f" — **{days} дн.**{warning}"
+                        except Exception:
+                            pass
+                        hist_text += f"• **{h['guild']}** ({first_str} - {last_str}){days_text}\n"
                 
                 text += f"📜 **История гильдий (все гильдии)**\n{hist_text}\n"
 
