@@ -494,8 +494,14 @@ class Recruiter(commands.Cog):
 
                 def parse_date_val(d_str):
                     if not d_str: return None
-                    if any(w in d_str.lower() for w in ['current', 'present', 'настоящее', 'текущ']):
+                    d_lower = d_str.lower()
+                    if any(w in d_lower for w in ['current', 'present', 'настоящее', 'текущ']):
                         return datetime.now()
+                    if 'T' in d_str and '-' in d_str:
+                        try:
+                            return datetime.fromisoformat(d_str.replace('Z', '+00:00')).replace(tzinfo=None)
+                        except Exception:
+                            pass
                     clean = re.sub(r'[^\w\s]', '', d_str).strip()
                     month_map = {
                         'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
@@ -514,10 +520,11 @@ class Recruiter(commands.Cog):
                     return None
 
                 hist_text = ""
-                for h in history:
+                for idx, h in enumerate(history):
                     first_str = h.get('first_seen', '')
                     last_str = h.get('last_seen', '')
-                    is_fallback = any(w in (first_str + ' ' + last_str).lower() for w in ['current', 'present', 'настоящее', 'текущ']) and not any(c.isdigit() for c in first_str)
+                    is_current = (idx == 0) or any(w in (first_str + ' ' + last_str).lower() for w in ['current', 'present', 'настоящее', 'текущ'])
+                    is_fallback = is_current and not any(c.isdigit() for c in first_str)
                     
                     if is_fallback:
                         hist_text += f"• **{h['guild']}** (Текущая гильдия)\n"
@@ -528,11 +535,12 @@ class Recruiter(commands.Cog):
                             d2 = parse_date_val(last_str)
                             if d1 and d2:
                                 days = (d2 - d1).days + 1
-                                warning = " ❌" if days < 14 else ""
+                                warning = " ❌" if (days < 14 and not is_current) else ""
                                 days_text = f" — **{days} дн.**{warning}"
                         except Exception:
                             pass
-                        hist_text += f"• **{h['guild']}** ({first_str} - {last_str}){days_text}\n"
+                        status_tag = " *(Текущая)*" if is_current else ""
+                        hist_text += f"• **{h['guild']}**{status_tag} ({first_str} - {last_str}){days_text}\n"
                 
                 text += f"📜 **История гильдий (все гильдии)**\n{hist_text}\n"
 

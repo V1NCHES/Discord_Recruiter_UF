@@ -14,24 +14,33 @@ class AlbionScraper:
             import undetected_chromedriver as uc
             from bs4 import BeautifulSoup
             import time
+            import json
+            import re
+            from datetime import datetime
 
-            options = uc.ChromeOptions()
-            options.add_argument('--window-size=1200,800')
+            def get_options():
+                opts = uc.ChromeOptions()
+                opts.add_argument('--headless=new')
+                opts.add_argument('--no-sandbox')
+                opts.add_argument('--disable-dev-shm-usage')
+                opts.add_argument('--window-size=1200,800')
+                return opts
 
             driver = None
-            try:
-                driver = uc.Chrome(options=options, version_main=151)
-            except Exception:
+            for v in [152, 151, 153, 130, 129, 128, None]:
                 try:
-                    driver = uc.Chrome(options=options)
+                    driver = uc.Chrome(options=get_options(), version_main=v) if v else uc.Chrome(options=get_options())
+                    if driver:
+                        break
                 except Exception:
                     pass
 
             if not driver:
+                print("Could not create undetected_chromedriver instance.")
                 return []
 
-            driver.get(f"https://europe.albiondb.net/player/{nickname}")
-            time.sleep(7)
+            driver.get(f"https://europe.albiondb.net/player/{urllib.parse.quote(nickname)}")
+            time.sleep(5)
             html = driver.page_source
 
             try:
@@ -41,10 +50,47 @@ class AlbionScraper:
 
             soup = BeautifulSoup(html, 'html.parser')
             guild_history = []
+
+            def format_iso_date(d_str):
+                if not d_str:
+                    return ""
+                if any(w in str(d_str).lower() for w in ['current', 'present', 'настоящее', 'текущ']):
+                    return "Present"
+                months_ru = ['янв.', 'фев.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сен.', 'окт.', 'ноя.', 'дек.']
+                try:
+                    if 'T' in str(d_str):
+                        dt = datetime.fromisoformat(str(d_str).replace('Z', '+00:00'))
+                        return f"{dt.day} {months_ru[dt.month - 1]} {dt.year} г."
+                except Exception:
+                    pass
+                return str(d_str)
+
+            # Strategy 1: Parse __NEXT_DATA__
+            next_script = soup.find('script', id='__NEXT_DATA__')
+            if next_script and next_script.string:
+                try:
+                    next_data = json.loads(next_script.string)
+                    history_data = next_data.get('props', {}).get('pageProps', {}).get('history', [])
+                    for h_item in history_data:
+                        g_name = h_item.get('guild_name', '')
+                        if g_name:
+                            f_date = format_iso_date(h_item.get('first_seen'))
+                            l_date = format_iso_date(h_item.get('last_seen'))
+                            guild_history.append({
+                                'guild': g_name,
+                                'first_seen': f_date,
+                                'last_seen': l_date
+                            })
+                    if guild_history:
+                        return guild_history
+                except Exception as ex_next:
+                    print(f"Error parsing __NEXT_DATA__: {ex_next}")
+
+            # Strategy 2: Table HTML parsing fallback
             history_header = None
-            for h2 in soup.find_all('h2'):
-                if 'Guild History' in h2.get_text():
-                    history_header = h2
+            for h_tag in soup.find_all(['h1', 'h2', 'h3']):
+                if 'Guild History' in h_tag.get_text():
+                    history_header = h_tag
                     break
 
             if history_header:
@@ -55,7 +101,10 @@ class AlbionScraper:
                     for row in rows:
                         cols = row.find_all('td')
                         if len(cols) >= 5:
-                            g_name = cols[0].get_text(strip=True)
+                            a_tag = cols[0].find('a')
+                            g_name = a_tag.get_text(strip=True) if a_tag else cols[0].get_text(strip=True)
+                            for badge in ['CURRENT', 'REJOINED', 'SPELL', 'Previous']:
+                                g_name = re.sub(r'\b' + badge + r'\b', '', g_name).strip()
                             first_seen = cols[3].get_text(strip=True)
                             last_seen = cols[4].get_text(strip=True)
                             if g_name:
