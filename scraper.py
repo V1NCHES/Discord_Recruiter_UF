@@ -102,31 +102,39 @@ class AlbionScraper:
                                     'last_seen': l_date
                                 })
                     if not items:
-                        history_header = None
-                        for h_tag in soup.find_all(['h1', 'h2', 'h3']):
-                            if 'Guild History' in h_tag.get_text():
-                                history_header = h_tag
-                                break
-                        if history_header:
-                            table = history_header.find_next('table')
-                            if table:
-                                tbody = table.find('tbody')
-                                rows = tbody.find_all('tr') if tbody else table.find_all('tr')
-                                for row in rows:
-                                    cols = row.find_all('td')
-                                    if len(cols) >= 5:
-                                        a_tag = cols[0].find('a')
-                                        g_name = a_tag.get_text(strip=True) if a_tag else cols[0].get_text(strip=True)
-                                        for badge in ['CURRENT', 'REJOINED', 'SPELL', 'Previous']:
-                                            g_name = re.sub(r'\b' + badge + r'\b', '', g_name).strip()
-                                        first_seen = cols[3].get_text(strip=True)
-                                        last_seen = cols[4].get_text(strip=True)
-                                        if g_name:
-                                            items.append({
-                                                'guild': g_name,
-                                                'first_seen': first_seen,
-                                                'last_seen': last_seen
-                                            })
+                        table = soup.find('table', class_=re.compile(r'guild-history-table|ranking-table'))
+                        if not table:
+                            history_header = None
+                            for h_tag in soup.find_all(['h1', 'h2', 'h3']):
+                                if 'Guild History' in h_tag.get_text():
+                                    history_header = h_tag
+                                    break
+                            if history_header:
+                                table = history_header.find_next('table')
+
+                        if table:
+                            tbody = table.find('tbody')
+                            rows = tbody.find_all('tr') if tbody else table.find_all('tr')
+                            for row in rows:
+                                cols = row.find_all('td')
+                                if len(cols) >= 5:
+                                    g_link = cols[0].find('a') or cols[0].find('strong')
+                                    g_name = g_link.get_text(strip=True) if g_link else cols[0].get_text(strip=True)
+                                    for badge in ['CURRENT', 'REJOINED', 'SPELL', 'Previous', 'Current']:
+                                        g_name = re.sub(r'\b' + badge + r'\b', '', g_name, flags=re.IGNORECASE).strip()
+                                    
+                                    time_first = cols[3].find('time')
+                                    first_seen = time_first.get_text(strip=True) if time_first else cols[3].get_text(strip=True)
+                                    
+                                    time_last = cols[4].find('time')
+                                    last_seen = time_last.get_text(strip=True) if time_last else cols[4].get_text(strip=True)
+                                    
+                                    if g_name:
+                                        items.append({
+                                            'guild': g_name,
+                                            'first_seen': first_seen,
+                                            'last_seen': last_seen
+                                        })
                     return items
                 except Exception:
                     return []
