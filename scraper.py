@@ -80,17 +80,56 @@ class AlbionScraper:
                 print("Could not create undetected_chromedriver instance.")
                 return []
 
-            driver.get(f"https://europe.albiondb.net/player/{urllib.parse.quote(nickname)}")
-            time.sleep(5)
-            html = driver.page_source
-
-            try:
-                driver.quit()
-            except Exception:
-                pass
-
-            soup = BeautifulSoup(html, 'html.parser')
-            guild_history = []
+            def fetch_single_url(target_nick):
+                try:
+                    driver.get(f"https://europe.albiondb.net/player/{urllib.parse.quote(target_nick)}")
+                    time.sleep(3)
+                    html = driver.page_source
+                    soup = BeautifulSoup(html, 'html.parser')
+                    next_script = soup.find('script', id='__NEXT_DATA__')
+                    items = []
+                    if next_script and next_script.string:
+                        next_data = json.loads(next_script.string)
+                        history_data = next_data.get('props', {}).get('pageProps', {}).get('history', [])
+                        for h_item in history_data:
+                            g_name = h_item.get('guild_name', '')
+                            if g_name:
+                                f_date = format_iso_date(h_item.get('first_seen'))
+                                l_date = format_iso_date(h_item.get('last_seen'))
+                                items.append({
+                                    'guild': g_name,
+                                    'first_seen': f_date,
+                                    'last_seen': l_date
+                                })
+                    if not items:
+                        history_header = None
+                        for h_tag in soup.find_all(['h1', 'h2', 'h3']):
+                            if 'Guild History' in h_tag.get_text():
+                                history_header = h_tag
+                                break
+                        if history_header:
+                            table = history_header.find_next('table')
+                            if table:
+                                tbody = table.find('tbody')
+                                rows = tbody.find_all('tr') if tbody else table.find_all('tr')
+                                for row in rows:
+                                    cols = row.find_all('td')
+                                    if len(cols) >= 5:
+                                        a_tag = cols[0].find('a')
+                                        g_name = a_tag.get_text(strip=True) if a_tag else cols[0].get_text(strip=True)
+                                        for badge in ['CURRENT', 'REJOINED', 'SPELL', 'Previous']:
+                                            g_name = re.sub(r'\b' + badge + r'\b', '', g_name).strip()
+                                        first_seen = cols[3].get_text(strip=True)
+                                        last_seen = cols[4].get_text(strip=True)
+                                        if g_name:
+                                            items.append({
+                                                'guild': g_name,
+                                                'first_seen': first_seen,
+                                                'last_seen': last_seen
+                                            })
+                    return items
+                except Exception:
+                    return []
 
             def format_iso_date(d_str):
                 if not d_str:
@@ -106,55 +145,29 @@ class AlbionScraper:
                     pass
                 return str(d_str)
 
-            # Strategy 1: Parse __NEXT_DATA__
-            next_script = soup.find('script', id='__NEXT_DATA__')
-            if next_script and next_script.string:
-                try:
-                    next_data = json.loads(next_script.string)
-                    history_data = next_data.get('props', {}).get('pageProps', {}).get('history', [])
-                    for h_item in history_data:
-                        g_name = h_item.get('guild_name', '')
-                        if g_name:
-                            f_date = format_iso_date(h_item.get('first_seen'))
-                            l_date = format_iso_date(h_item.get('last_seen'))
-                            guild_history.append({
-                                'guild': g_name,
-                                'first_seen': f_date,
-                                'last_seen': l_date
-                            })
-                    if guild_history:
-                        return guild_history
-                except Exception as ex_next:
-                    print(f"Error parsing __NEXT_DATA__: {ex_next}")
+            best_history = fetch_single_url(nickname)
 
-            # Strategy 2: Table HTML parsing fallback
-            history_header = None
-            for h_tag in soup.find_all(['h1', 'h2', 'h3']):
-                if 'Guild History' in h_tag.get_text():
-                    history_header = h_tag
-                    break
+            # If 1 or 0 items, check nickname variations (e.g. c <-> s ending) to find full profile
+            if len(best_history) <= 1:
+                variations = []
+                if nickname.lower().endswith('c'):
+                    variations.append(nickname[:-1] + 's')
+                    variations.append(nickname[:-1] + 'S')
+                elif nickname.lower().endswith('s'):
+                    variations.append(nickname[:-1] + 'c')
+                    variations.append(nickname[:-1] + 'C')
+                
+                for var_nick in variations:
+                    var_history = fetch_single_url(var_nick)
+                    if len(var_history) > len(best_history):
+                        best_history = var_history
 
-            if history_header:
-                table = history_header.find_next('table')
-                if table:
-                    tbody = table.find('tbody')
-                    rows = tbody.find_all('tr') if tbody else table.find_all('tr')
-                    for row in rows:
-                        cols = row.find_all('td')
-                        if len(cols) >= 5:
-                            a_tag = cols[0].find('a')
-                            g_name = a_tag.get_text(strip=True) if a_tag else cols[0].get_text(strip=True)
-                            for badge in ['CURRENT', 'REJOINED', 'SPELL', 'Previous']:
-                                g_name = re.sub(r'\b' + badge + r'\b', '', g_name).strip()
-                            first_seen = cols[3].get_text(strip=True)
-                            last_seen = cols[4].get_text(strip=True)
-                            if g_name:
-                                guild_history.append({
-                                    'guild': g_name,
-                                    'first_seen': first_seen,
-                                    'last_seen': last_seen
-                                })
-            return guild_history
+            try:
+                driver.quit()
+            except Exception:
+                pass
+
+            return best_history
         except Exception as e:
             print(f"AlbionDB history fetch error: {e}")
             return []
