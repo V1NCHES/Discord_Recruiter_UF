@@ -1,3 +1,4 @@
+import urllib
 import urllib.request
 import urllib.parse
 import json
@@ -16,6 +17,8 @@ class AlbionScraper:
             import time
             import json
             import re
+            import urllib
+            import urllib.parse
             from datetime import datetime
 
             def get_options():
