@@ -407,12 +407,7 @@ class Recruiter(commands.Cog):
     @app_commands.command(name="start_db", description="Fetches and displays detailed statistics for a given player.")
     @has_bot_permission()
     async def start_db(self, interaction: discord.Interaction, nickname: str):
-        loading_embed = discord.Embed(
-            title=f"🔎 Поиск данных: {nickname}",
-            description="Пожалуйста, подождите. Обход защиты и сбор данных занимает около 20-30 секунд...",
-            color=discord.Color.orange()
-        )
-        await interaction.response.send_message(embed=loading_embed)
+        await interaction.response.defer()
 
         def format_shorthand(value_str):
             if not value_str or value_str == '0':
@@ -445,7 +440,7 @@ class Recruiter(commands.Cog):
                     description=f"Не удалось получить данные для игрока **{nickname}**. Возможно, профиль скрыт или сайт недоступен.",
                     color=discord.Color.red()
                 )
-                await interaction.edit_original_response(embed=error_embed)
+                await interaction.followup.send(embed=error_embed)
                 return
 
             encoded_nick = quote(nickname)
@@ -549,7 +544,7 @@ class Recruiter(commands.Cog):
             if len(text) > 2000:
                 text = text[:1997] + "..."
             
-            await interaction.edit_original_response(content=text, embed=None)
+            await interaction.followup.send(content=text)
 
         except Exception as e:
             error_embed = discord.Embed(
@@ -557,7 +552,7 @@ class Recruiter(commands.Cog):
                 description=f"При обработке данных возникла ошибка: `{str(e)}`",
                 color=discord.Color.red()
             )
-            await interaction.edit_original_response(embed=error_embed)
+            await interaction.followup.send(embed=error_embed)
 
     @app_commands.command(name="stats_db", description="Парсит детальную статистику игрока с Albion API / AlbionDB.")
     @has_bot_permission()
