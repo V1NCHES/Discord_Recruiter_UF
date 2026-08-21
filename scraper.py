@@ -26,8 +26,49 @@ class AlbionScraper:
                 opts.add_argument('--window-size=1200,800')
                 return opts
 
+            def get_installed_chrome_version():
+                import subprocess
+                reg_keys = [
+                    r'HKCU\Software\Google\Chrome\BLBeacon',
+                    r'HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome',
+                    r'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome'
+                ]
+                for key in reg_keys:
+                    try:
+                        out = subprocess.check_output(f'reg query "{key}" /v version', shell=True, text=True, stderr=subprocess.DEVNULL)
+                        m = re.search(r'(\d+)\.\d+\.\d+\.\d+', out)
+                        if m:
+                            return int(m.group(1))
+                    except Exception:
+                        pass
+                    try:
+                        out = subprocess.check_output(f'reg query "{key}" /v DisplayVersion', shell=True, text=True, stderr=subprocess.DEVNULL)
+                        m = re.search(r'(\d+)\.\d+\.\d+\.\d+', out)
+                        if m:
+                            return int(m.group(1))
+                    except Exception:
+                        pass
+
+                for cmd in ['google-chrome --version', 'chromium --version', 'chromium-browser --version']:
+                    try:
+                        out = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.DEVNULL)
+                        m = re.search(r'(\d+)\.\d+\.\d+\.\d+', out)
+                        if m:
+                            return int(m.group(1))
+                    except Exception:
+                        pass
+                return None
+
+            detected_v = get_installed_chrome_version()
+            version_candidates = []
+            if detected_v:
+                version_candidates.append(detected_v)
+            for v_opt in [None, 151, 152, 153, 130]:
+                if v_opt not in version_candidates:
+                    version_candidates.append(v_opt)
+
             driver = None
-            for v in [152, 151, 153, 130, 129, 128, None]:
+            for v in version_candidates:
                 try:
                     driver = uc.Chrome(options=get_options(), version_main=v) if v else uc.Chrome(options=get_options())
                     if driver:
